@@ -1,5 +1,5 @@
 
-# Banking Chatbot Web Application
+# Banking Assistance Web Application
 
 This project is a web application for a banking chatbot system, providing user-friendly interfaces for login and interaction with a chatbot for banking assistance. The backend processes and preprocesses data to serve as a robust system for banking insights.
 
