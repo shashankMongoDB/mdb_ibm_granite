@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, render_template, request, session, redirect, jsonify
 from flask_session import Session
 from pymongo import MongoClient
@@ -5,14 +7,14 @@ from sentence_transformers import SentenceTransformer
 from ibm_watsonx_ai.foundation_models import ModelInference
 from ibm_watsonx_ai.foundation_models.utils.enums import DecodingMethods
 from ibm_watsonx_ai.foundation_models.extensions.langchain import WatsonxLLM
-import re
+from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
 
 # Flask app
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
 app.config['SESSION_TYPE'] = 'filesystem'  # Use the filesystem to store session data
-app.config["SESSION_PERMANENT"] = True    # Sessions expire when the browser is closed
-app.config["SESSION_USE_SIGNER"] = True    # Sign session cookies for added security
+app.config["SESSION_PERMANENT"] = True  # Sessions expire when the browser is closed
+app.config["SESSION_USE_SIGNER"] = True  # Sign session cookies for added security
 Session(app)
 
 # MongoDB connection
@@ -29,14 +31,16 @@ spending_insight_collection = client["banking_quickstart"]["spending_insight_det
 model_path = "ibm-granite/granite-embedding-125m-english"
 embedding_model = SentenceTransformer(model_path)
 
-# Initialize IBM Watsonx LLM
 parameters = {
-    "decoding_method": DecodingMethods.GREEDY,
-    "min_new_tokens": 1,
-    "max_new_tokens": 100
+    GenParams.DECODING_METHOD: DecodingMethods.GREEDY,
+    GenParams.MIN_NEW_TOKENS: 1,
+    GenParams.MAX_NEW_TOKENS: 250,
+    GenParams.TEMPERATURE: 0,
+    GenParams.STOP_SEQUENCES: ["Human:", "Observation"]
+
 }
 llm_model = ModelInference(
-    model_id="ibm/granite-13b-instruct-v2",
+    model_id="ibm/granite-3-8b-instruct",
     params=parameters,
     credentials={
         "url": "<APP_URL>",
@@ -45,12 +49,6 @@ llm_model = ModelInference(
     project_id="<PROJECT_ID>"
 )
 granite_llm_ibm = WatsonxLLM(model=llm_model)
-
-
-def extract_customer_id(query):
-    """Extract customer ID or key identifier from query using regex."""
-    match = re.search(r"\bCUST[0-9]+\b", query, re.IGNORECASE)
-    return match.group(0) if match else None
 
 
 # -----------------------------
@@ -88,7 +86,7 @@ def unified_retriever_query(query):
                             "content": 1,
                             "metadata.answer": 1,
                             "metadata.category": 1,
-                            "metadata.faq_id": 1,
+                            # "metadata.faq_id": 1,
                             "score": {"$literal": 1.0}  # Exact matches have a perfect score
                         }
                     }
@@ -127,8 +125,7 @@ def unified_retriever_query(query):
                         "index": index_name,
                         "text": {
                             "query": query,
-                            "path": ["content", "metadata.answer", "metadata.category",
-                                     "metadata.faq_id"],
+                            "path": ["content", "metadata.answer", "metadata.category"],
                             "score": {"boost": {"value": 2}}  # Adjust fields
                         }
                     }
@@ -174,6 +171,7 @@ def unified_retriever_query(query):
     print(f"Retrieved context: {context}")
     return "\n".join(context)
 
+
 def unified_retriever_for_authenticated_customer(query, customer_id):
     """Retrieve context from all collections using vector and text similarity search."""
     print(f"Original Query: {query}")
@@ -195,7 +193,7 @@ def unified_retriever_for_authenticated_customer(query, customer_id):
     }
 
     # MongoDB query for vector and text-based search
-    def find_similar(collection, index_name, embedding, query, top_k=3):
+    def find_similar(collection, top_k=5):
         try:
             exact_match_results = []
             if customer_id:
@@ -218,66 +216,19 @@ def unified_retriever_for_authenticated_customer(query, customer_id):
                             "metadata.most_spent_category": 1,
                             "metadata.last_month_savings": 1,
                             "metadata.monthly_expense": 1,
-                            "metadata.monthly_income":1,
+                            "metadata.monthly_income": 1,
                             "metadata.amount": 1,
                             "metadata.transaction_date": 1,
+                            "metadata.answer": 1,
+                            "content": 1,
                             "score": {"$literal": 1.0}  # Exact matches have a perfect score
                         }
                     }
                 ]
                 exact_match_results = list(collection.aggregate(exact_match_pipeline))
                 print(f"Exact match retrieved {len(exact_match_results)} documents from {collection.name}")
-            print(f"Running vector search on collection: {collection.name} with index: {index_name}")
 
-            # Step 1: Vector-based search
-            vector_pipeline = [
-                {
-                    "$search": {
-                        "index": index_name,
-                        "knnBeta": {
-                            "vector": embedding,
-                            "path": "embedding",
-                            "k": top_k
-                        }
-                    }
-                },
-                {
-                    "$project": {
-                        "customer_id": 1,
-                        "metadata": 1,
-                        "score": {"$meta": "searchScore"}
-                    }
-                }
-            ]
-            vector_results = list(collection.aggregate(vector_pipeline))
-            print(f"Vector search retrieved {len(vector_results)} documents from {collection.name}")
-
-            # Step 2: Text-based search
-            text_pipeline = [
-                {
-                    "$search": {
-                        "index": index_name,
-                        "text": {
-                            "query": query,
-                            "path": ["customer_id", "metadata.name", "metadata.description",
-                                     "metadata.most_spent_category", "metadata.transaction_date", "metadata.amount"],
-                            "score": {"boost": {"value": 2}}  # Adjust fields
-                        }
-                    }
-                },
-                {
-                    "$project": {
-                        "customer_id": 1,
-                        "metadata": 1,
-                        "score": {"$meta": "searchScore"}
-                    }
-                }
-            ]
-            text_results = list(collection.aggregate(text_pipeline))
-            print(f"Text search retrieved {len(text_results)} documents from {collection.name}")
-
-            # Step 3: Combine and sort results
-            combined_results = vector_results + text_results + exact_match_results
+            combined_results = exact_match_results
             combined_results.sort(key=lambda x: x["score"], reverse=True)  # Sort by descending score
 
             # Limit to top_k results
@@ -292,8 +243,9 @@ def unified_retriever_for_authenticated_customer(query, customer_id):
     for name, config in collection_index_mapping.items():
         collection = config["collection"]
         index_name = config["index"]
-        docs = find_similar(collection, index_name, query_embedding, query)
+        docs = find_similar(collection)
         print(docs)
+
         for doc in docs:
             content = doc.get("customer_id",
                               doc.get("name", doc.get("description", doc.get("most_spent_category", ""))))
@@ -306,6 +258,8 @@ def unified_retriever_for_authenticated_customer(query, customer_id):
 
     print(f"Retrieved context: {context}")
     return "\n".join(context)
+
+
 # -----------------------------
 # Flask Routes
 # -----------------------------
@@ -322,7 +276,7 @@ def login():
             session["customer_id"] = customer_id
             customer_name = customer.get("metadata", {}).get("name", "Customer")
             session["customer_name"] = customer_name
-            return redirect("/chatbot")
+            return redirect("/chatbot1")
         else:
             return render_template("login.html", error="Invalid Customer ID")
 
@@ -337,41 +291,78 @@ def welcome():
     return render_template("chatbot.html", customer_name=session["customer_name"])
 
 
+# Load keywords from a file
+def load_keywords(file_path):
+    with open(file_path, "r") as file:
+        return json.load(file)
+
+
+# Detect intent based on user input
+def detect_intent(user_input, keywords):
+    lower_input = user_input.lower()
+
+    for intent, words in keywords.items():
+        if any(keyword in lower_input for keyword in words):
+            return intent
+    return "unknown"
+
+
 @app.route("/api/query", methods=["POST"])
 def api_query():
-    """API endpoint for querying the chatbot."""
     query = request.json.get("query")
-    customer_id = session.get("customer_id")
-
-    if customer_id:
-        # Customer-specific queries
-        context = unified_retriever_for_authenticated_customer(query, customer_id)
+    keywords_file = "keywords.json"
+    keywords = load_keywords(keywords_file)
+    intent = detect_intent(query, keywords)
+    if intent != "unknown":
+        context = request.json.get("query")
     else:
-        # Only FAQs allowed for unauthenticated users
-        if any(word in query.lower() for word in ["transaction", "spending", "my"]):
-            return jsonify({"response": "Please log in to query account-related details."})
-        context = unified_retriever_query(query)
+        """API endpoint for querying the chatbot."""
+        customer_id = session.get("customer_id")
+
+        if customer_id:
+            # Customer-specific queries
+            context = unified_retriever_for_authenticated_customer(query, customer_id)
+        else:
+            # Only FAQs allowed for unauthenticated users
+            if any(word in query.lower() for word in ["transaction", "spending", "my"]):
+                return jsonify({"response": "Please log in to query account-related details."})
+            context = unified_retriever_query(query)
 
     prompt_template = """
-You are a highly knowledgeable financial assistant. Your job is to answer the user’s financial questions accurately and clearly based on the provided query. If the query is unclear or beyond your knowledge, respond with “I’m sorry, I don’t have enough information to answer that.”
+You are a highly skilled financial assistant. Your role is to answer the user’s financial queries with accuracy, clarity, and professionalism based on the provided context and query. Always prioritize user-friendly, precise responses without introducing unnecessary elements.
 
-Use the context provided below to combine information from multiple sources when they are related to the same query. If the context contains repeated or overlapping information, summarize it into a single, coherent response. Present the information in a clear and concise format suitable for a user-friendly financial assistant.
-When the query specifies “recent” or “latest,” prioritize the most recent data based on the transaction_date or other applicable date fields. Present the information in a clear, concise format suitable for the user.
+
+Guidelines for Response:
+	1.	Context Utilization:
+        •	Use the context provided below to craft a coherent response.
+        •	Combine related information from multiple sources in the context.
+        •	Avoid repeating or duplicating information; summarize overlapping details concisely.
+	2.	Recent or Latest Data:
+        •	If the query includes terms like “recent” or “latest,” prioritize the most up-to-date data based on transaction_date or other date-related fields.
+	3.	Clarity, Relevance, and Additional Information:
+        •	Provide clear, human-readable sentences in the response.
+        •	Do not include unnecessary formatting, placeholders, or suggestions.
+        •	Avoid adding extra questions or answers unrelated to the query.
+        •	Ensure added information is relevant and does not detract from the main response.
+	4.	Accuracy and Limitations:
+        •	Do not speculate, fabricate, or guess information.
+        •	If the answer is beyond your scope or unclear, state explicitly that the information is unavailable.
+    5. Intent
+        - If context is not related to financial queries, find the intent and provide response accordingly.
+    6. Query detection
+        - If you getting some context with not related to query, find intent of the query and then provide response. 
+        - do not provide response directly based on context, analyse query first.
+
+
 Context:
 {context}
 
-### Instructions:
-	•	When “recent” or “latest” is mentioned, provide only the most recent transaction or relevant data based on the transaction_date or else provide combined result.
-	•	Combine related information from multiple sources into a unified answer. For example, if the query is about transactions for a specific customer, provide all transaction details in a structured list.
-	•	If the context contains repeated or overlapping information, summarize it into a single, coherent response.
-	•	Avoid duplicating information. Mention each piece of data only once.
-	•	Present the response in human-readable sentences. Do not use JSON in the output.
-	•	Provide clear, actionable information wherever possible.
-	•	Avoid speculating or making up data. If you are unsure, state that the information is unavailable.
+Query:
+{question}
 
+Output:
 
-## Question: {question}
-## Answer:
+Provide a concise, clear, and human-readable answer based on the above instructions. Avoid any additional formatting or unnecessary artifacts in the response.
 """
     prompt = prompt_template.format(context=context, question=query)
     print(prompt)
@@ -381,25 +372,7 @@ Context:
         response = granite_llm_ibm.generate(prompts=[prompt])
         bot_response = response.generations[0][0].text
         print(bot_response)
-
-        # Check if bot_response is JSON and format it
-        try:
-            response_data = eval(bot_response)  # Convert stringified JSON to dictionary (ensure response is safe)
-            if isinstance(response_data, dict):
-                # Format the JSON into an HTML list
-                formatted_response = "<ul>" + "".join(
-                    [f"<li><strong>{key.replace('_', ' ').capitalize()}</strong>: {value}</li>" for key, value in
-                     response_data.items()]
-                ) + "</ul>"
-                bot_response = f"<p>Here are the details:</p>{formatted_response}"
-        except (SyntaxError, ValueError):
-            # If it's not JSON, leave the response as-is
-            pass
-
-        # Append the bot's response to the current query in history
-        # conversation_history[-1]["bot"] = bot_response
-        # session["conversation_history"] = conversation_history  # Save the updated history back to the session
-
+        print(jsonify({"query": query, "response": bot_response}))
         return jsonify({"query": query, "response": bot_response})
     except Exception as e:
         print(f"Error generating LLM response: {e}")
