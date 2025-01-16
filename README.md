@@ -1,7 +1,7 @@
 
-# Banking Assistance Web Application
+# Building an Intelligent Finance Assistant with MongoDB Atlas and IBM Watsonx.ai
 
-This project is a web application for a banking chatbot system, providing user-friendly interfaces for login and interaction with a chatbot for banking assistance. The backend processes and preprocesses data to serve as a robust system for banking insights.
+For this tutorial, we will be using a financial dataset containing customer details,  transactions, spending insights and metadata. These records represent real-world scenarios such as payments, savings, and expenses, making the dataset highly relevant for building an intelligent finance assistant. To generate the vector embeddings for storing and retrieving this data, we will use the Granite Embedding Models from IBM Watsonx.ai. These embeddings capture the semantic meaning of financial data, enabling efficient similarity searches and contextual data retrieval. To follow along, you will need an IDE, a MongoDB Atlas account for data storage and indexing, and an IBM Watsonx.ai account for generating embeddings. By the end of this tutorial, you’ll have a functional system ready to support real-time financial assistance and personalized recommendations.
 
 ---
 
@@ -45,9 +45,9 @@ This project is a web application for a banking chatbot system, providing user-f
 ## Setup Instructions
 
 ### Prerequisites
-- Python 3.8+
-- MongoDB
-- Node.js (for serving HTML files if required)
+- Python 3.11+
+- MongoDB Atlas Account
+- IBM Cloud Account to access IBM Watsonx.ai foundation models
 
 ### Steps
 1. Clone the repository:
@@ -77,8 +77,8 @@ This project is a web application for a banking chatbot system, providing user-f
 ---
 
 ## Usage
-1. Open `login.html` in a web browser.
-2. Enter **Customer ID** and log in.
+1. Open `<hosted-ip:5000/login>` in a web browser.
+2. Enter **Customer ID** and log in. (eg: Enter between CUST00001-CUST01000)
 3. Interact with the chatbot for banking assistance.
 
 ---
