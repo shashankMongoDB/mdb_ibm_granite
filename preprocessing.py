@@ -77,8 +77,8 @@ def add_documents_to_vector_store(collection, data, key_field):
 with open(dataset_file, "r") as file:
     dataset = json.load(file)
 
-# print("Loading FAQs into vector store...")
-# add_documents_to_vector_store(faq_collection, dataset["faqs"], "question")
+print("Loading FAQs into vector store...")
+add_documents_to_vector_store(faq_collection, dataset["faqs"], "question")
 
 print("Loading Customers into vector store...")
 add_documents_to_vector_store(customer_collection, dataset["customers"], "customer_id")
