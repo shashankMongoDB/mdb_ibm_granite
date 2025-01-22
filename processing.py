@@ -276,7 +276,7 @@ def login():
             session["customer_id"] = customer_id
             customer_name = customer.get("metadata", {}).get("name", "Customer")
             session["customer_name"] = customer_name
-            return redirect("/chatbot1")
+            return redirect("/chatbot")
         else:
             return render_template("login.html", error="Invalid Customer ID")
 
