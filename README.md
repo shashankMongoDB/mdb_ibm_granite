@@ -47,8 +47,8 @@ For this tutorial, we will be using a financial dataset containing customer deta
 
 ### Prerequisites
 Before starting the implementation, ensure you have the following set up:
-- Python 3.11+
-- **MongoDB Atlas: Cluster with Transaction and Customer Data Collections**
+- **Python 3.11+**
+- **MongoDB Atlas: Cluster with Transaction and Customer Data Collections**,
 MongoDB Atlas will be the primary database for storing and querying transaction and customer data.
 
 1. Create a MongoDB Atlas Account
@@ -68,7 +68,7 @@ MongoDB Atlas will be the primary database for storing and querying transaction 
    * Go to “Database Access” and create a user with a username, password, and role (e.g., “Read and Write to Any Database”).
    * In “Network Access”, add your IP address or allow all IPs (0.0.0.0/0) for unrestricted development access.
 
-- **IBM Watsonx.ai: API Key for Accessing LLMs**
+- **IBM Watsonx.ai: API Key for Accessing LLMs**, 
 IBM Watsonx.ai will handle the reasoning and generative tasks.
 
 1. Create an IBM Cloud Account
@@ -78,10 +78,12 @@ IBM Watsonx.ai will handle the reasoning and generative tasks.
    * Log in and search for “Watsonx.ai” in the catalog.
    * Create an instance; a sandbox environment will be set up automatically.
    * You can locate project id under IBM Watsonx sandbox account.
+<img width="1512" alt="Screenshot 2025-01-28 at 1 10 49 AM" src="https://github.com/user-attachments/assets/c214d272-4a3c-43d0-87e5-57233b215935" />
 
 3. Generate an API Key on IBM Cloud
    * Go to “Manage” > “Access (IAM)” in the IBM Cloud dashboard.
    * Click “Create API Key”, name it (e.g., watsonx_key), and save it securely.
+<img width="1504" alt="Screenshot 2025-01-28 at 1 14 57 AM" src="https://github.com/user-attachments/assets/4bbed656-ee7b-47c2-ac68-c32e37448952" />
 
 4. Retrieve Service URL
    * Find the service URL (e.g., https://us-south.ml.cloud.ibm.com) in the Watsonx.ai instance dashboard.
