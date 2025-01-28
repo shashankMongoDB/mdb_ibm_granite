@@ -77,8 +77,9 @@ IBM Watsonx.ai will handle the reasoning and generative tasks.
 2. Set Up Watsonx.ai
    * Log in and search for “Watsonx.ai” in the catalog.
    * Create an instance; a sandbox environment will be set up automatically.
+   * You can locate project id under IBM Watsonx sandbox account.
 
-3. Generate an API Key
+3. Generate an API Key on IBM Cloud
    * Go to “Manage” > “Access (IAM)” in the IBM Cloud dashboard.
    * Click “Create API Key”, name it (e.g., watsonx_key), and save it securely.
 
@@ -128,12 +129,18 @@ IBM Watsonx.ai will handle the reasoning and generative tasks.
 
 ## Customizability
 The reference code provided in this repository is designed to give you a jumpstart for implementing the reference architecture. It can be customized to meet specific use case requirements, such as integrating additional AI models, altering the frontend design, or modifying backend workflows to handle specific business logic.
+### IBM Foundation Models
+By providing a vast variety of foundation models and robust customization options, IBM Watsonx.ai empowers developers to explore and implement solutions tailored to their unique needs. Explore the models here: [IBM Watsonx.ai Foundation Models](https://www.ibm.com/products/watsonx-ai/foundation-models).
 
----
+### Understanding Model Parameters
+IBM Watsonx.ai allows for extensive customization of model behavior through adjustable parameters. These parameters impact how the models generate responses, enabling fine-tuning for specific use cases.
 
-## Requirements
+A detailed guide on available parameters and their usage can be found here: [Watsonx.ai Model Parameters](https://dataplatform.cloud.ibm.com/docs/content/wsj/analyze-data/fm-model-parameters.html?context=wx). Examples include:
+1. **temperature**: Controls randomness in responses.
+2. **max_tokens**: Limits the response length.
+3. **top_p**: Enables nucleus sampling for better result diversity.
 
-Refer to `requirements.txt` for the list of dependencies.
+Developers are encouraged to review this guide and adjust parameters as needed to optimize model performance.
 
 ---
 
