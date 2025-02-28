@@ -86,6 +86,20 @@
             cursor: pointer;
         }
 
+        /* Sample questions dropdown */
+        .sample-questions {
+            padding: 10px;
+            background: #f9f9f9;
+            border-bottom: 1px solid #ddd;
+        }
+        .sample-questions select {
+            width: 100%;
+            padding: 8px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
         .chat-messages {
             flex: 1;
             padding: 10px;
@@ -121,7 +135,6 @@
             align-items: center;
             margin-top: 5px;
             color: black;
-
         }
 
         .typing-animation .dots {
@@ -234,6 +247,15 @@
 
     <div class="chatbot-container" id="chatbot">
         <div class="chat-header" id="chat-header">Finance Assistant</div>
+        <div class="sample-questions">
+            <select id="sample-questions-dropdown">
+                <option value="">Select a sample question</option>
+                <option value="What are my spending insights?">What are my spending insights?</option>
+                <option value="Where do I spend the most money?">Where do I spend the most money?</option>
+                <option value="What is the largest transaction I have made?">What is the largest transaction I have made?</option>
+                <option value="Provide me with the details of my smallest transaction">Provide me with the details of my smallest transaction</option>
+            </select>
+        </div>
         <div class="chat-messages" id="messages">
             <div class="message bot-message">Hi {{ customer_name }}, how can I assist you today?</div>
         </div>
@@ -253,6 +275,7 @@
             const messages = document.getElementById("messages");
             const userMessageInput = document.getElementById("userMessage");
             const sendBtn = document.getElementById("send-btn");
+            const sampleDropdown = document.getElementById("sample-questions-dropdown");
 
             // Toggle chatbot visibility
             chatIcon.addEventListener("click", () => {
@@ -263,6 +286,14 @@
             chatHeader.addEventListener("click", () => {
                 chatbot.style.display = "none";
                 chatIcon.style.display = "flex";
+            });
+
+            // Populate chat input with selected sample question
+            sampleDropdown.addEventListener("change", () => {
+                const selectedQuestion = sampleDropdown.value;
+                if (selectedQuestion) {
+                    userMessageInput.value = selectedQuestion;
+                }
             });
 
             const addMessage = (message, type = "bot") => {

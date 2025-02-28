@@ -118,8 +118,9 @@ IBM Watsonx.ai will handle the reasoning and generative tasks.
 
 ## Usage
 1. Open `<hosted-ip:5000/login>` in a web browser.
-2. Enter **Customer ID** and log in. (eg: Enter between CUST00001-CUST01000)
-3. Interact with the chatbot for banking assistance.
+2. Engage with the chatbot on the login page, which provides information on general FAQs. Sample questions are also included within the chatbot dialogue.
+3. Select a Customer ID from the dropdown, choose any ID, and proceed with login.
+4. Interact with the chatbot for banking assistance.
 
 ---
 
